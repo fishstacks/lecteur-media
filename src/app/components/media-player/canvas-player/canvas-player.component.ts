@@ -11,8 +11,8 @@ import { interval, Subscription } from 'rxjs';
   styleUrl: './canvas-player.component.scss'
 })
 export class CanvasPlayerComponent implements OnChanges, OnInit, OnDestroy, AfterViewInit {
-  @ViewChild('canvas', { static: false }) canvasRef!: ElementRef<HTMLCanvasElement>;
-  @ViewChild('videoPlayer', { static: false }) videoPlayerRef!: ElementRef<HTMLVideoElement>;
+  @ViewChild('canvas') canvasRef!: ElementRef<HTMLCanvasElement>;
+  @ViewChild('videoPlayer') videoPlayerRef!: ElementRef<HTMLVideoElement>;
 
   @Input() mediaAssets: MediaAsset[] = [];
   @Input() currentAssetIndex = 0;
@@ -27,33 +27,30 @@ export class CanvasPlayerComponent implements OnChanges, OnInit, OnDestroy, Afte
 
   private timer: any;
   private imageElement = new Image();
-  private imagePlayStartTime = 0;
-  private imageElapsedBeforePause = 0;
-  private timeUpdateSubscription?: Subscription;
+  private startTime = 0;
+  private pausedTime = 0;
+  private timeUpdateSub?: Subscription;
   private viewInitialized = false;
 
   ngOnInit(): void {
-    this.timeUpdateSubscription = interval(100).subscribe(() => this.updateTimeInfo());
+    this.timeUpdateSub = interval(100).subscribe(() => this.emitTimeUpdate());
   }
 
   ngAfterViewInit(): void {
     this.viewInitialized = true;
-    if (this.mediaAssets && this.mediaAssets.length > 0) {
+    if (this.mediaAssets?.length > 0) {
       setTimeout(() => this.loadAsset(0), 0);
     }
   }
 
   ngOnDestroy(): void {
-    this.timeUpdateSubscription?.unsubscribe();
+    this.timeUpdateSub?.unsubscribe();
     this.clearTimer();
   }
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['mediaAssets'] && !changes['mediaAssets'].firstChange) {
-      setTimeout(() => {
-        this.currentAssetIndex = 0;
-        this.loadAsset(0);
-      }, 0);
+      setTimeout(() => this.loadAsset(0), 0);
     }
 
     if (changes['isPlaying']) {
@@ -63,19 +60,15 @@ export class CanvasPlayerComponent implements OnChanges, OnInit, OnDestroy, Afte
 
   play(): void {
     if (!this.mediaAssets.length) return;
-  
+    
     this.isPlaying = true;
-    const asset = this.mediaAssets[this.currentAssetIndex];
-  
+    const asset = this.getCurrentAsset();
+    
     if (asset.type === 'video') {
-      const video = this.videoPlayerRef?.nativeElement;
-      if (video) {
-        video.play().catch(err => console.error('Error playing video:', err));
-      }
-    } else if (asset.type === 'image') {
-      this.imagePlayStartTime = Date.now() - (this.imageElapsedBeforePause * 1000);
-  
-      const remainingTime = asset.duration - this.imageElapsedBeforePause;
+      this.getVideo()?.play().catch(err => console.error('Error playing video:', err));
+    } else {
+      this.startTime = Date.now() - (this.pausedTime * 1000);
+      const remainingTime = asset.duration - this.pausedTime;
       
       if (remainingTime > 0) {
         this.timer = setTimeout(() => this.nextAsset(), remainingTime * 1000);
@@ -89,45 +82,35 @@ export class CanvasPlayerComponent implements OnChanges, OnInit, OnDestroy, Afte
     if (!this.mediaAssets.length) return;
     
     this.isPlaying = false;
-    const asset = this.mediaAssets[this.currentAssetIndex];
-  
+    const asset = this.getCurrentAsset();
+    
     if (asset.type === 'video') {
-      this.videoPlayerRef?.nativeElement?.pause();
-    } else if (asset.type === 'image') {
+      this.getVideo()?.pause();
+    } else {
       this.clearTimer();
-      
-      const currentElapsed = Math.min(
-        (Date.now() - this.imagePlayStartTime) / 1000,
-        asset.duration
-      );
-      
-      this.imageElapsedBeforePause = currentElapsed;
+      this.pausedTime = Math.min((Date.now() - this.startTime) / 1000, asset.duration);
     }
   }
   
-  seek(progressPercentage: number): void {
+  seek(progressPercent: number): void {
     if (!this.mediaAssets.length) return;
-  
-    const asset = this.mediaAssets[this.currentAssetIndex];
-    const targetTime = (progressPercentage / 100) * asset.duration;
-  
+    
+    const asset = this.getCurrentAsset();
+    const targetTime = (progressPercent / 100) * asset.duration;
+    
     this.clearTimer();
-  
+    
     if (asset.type === 'video') {
-      const video = this.videoPlayerRef?.nativeElement;
+      const video = this.getVideo();
       if (video) {
-        const trimStart = asset.trimStart || 0;
-        video.currentTime = trimStart + targetTime;
-  
-        if (this.isPlaying) {
-          video.play().catch(err => console.error('Error seeking video:', err));
-        }
+        video.currentTime = (asset.trimStart || 0) + targetTime;
+        if (this.isPlaying) video.play().catch(err => console.error('Error after seek:', err));
       }
-    } else if (asset.type === 'image') {
-      this.imageElapsedBeforePause = targetTime;
+    } else {
+      this.pausedTime = targetTime;
       
       if (this.isPlaying) {
-        this.imagePlayStartTime = Date.now() - (targetTime * 1000);
+        this.startTime = Date.now() - (targetTime * 1000);
         const remainingTime = asset.duration - targetTime;
         
         if (remainingTime > 0) {
@@ -137,107 +120,125 @@ export class CanvasPlayerComponent implements OnChanges, OnInit, OnDestroy, Afte
         }
       }
     }
-  
-    this.updateTimeInfo();
+    
+    this.emitTimeUpdate();
   }
   
   loadAsset(index: number): void {
-    if (!this.viewInitialized) return;
+    if (!this.viewInitialized || index >= this.mediaAssets.length) return;
     
     this.clearTimer();
-    this.imageElapsedBeforePause = 0;
-
-    if (!this.mediaAssets || index >= this.mediaAssets.length) return;
-
+    this.pausedTime = 0;
     this.currentAssetIndex = index;
-    const asset = this.mediaAssets[index];
-
-    if (asset.type === 'video') {
-      this.loadVideo(asset);
-    } else if (asset.type === 'image') {
-      this.loadImage(asset);
-    }
-
-    this.updateTimeInfo();
+    
+    const asset = this.getCurrentAsset();
+    
+    asset.type === 'video' ? this.loadVideo(asset) : this.loadImage(asset);
+    this.emitTimeUpdate();
   }
   
   private loadImage(asset: MediaAsset): void {
     const canvas = this.canvasRef?.nativeElement;
-    const context = canvas?.getContext('2d');
-    if (!canvas || !context) return;
-  
+    const video = this.videoPlayerRef?.nativeElement;
+    const ctx = canvas?.getContext('2d');
+    if (!canvas || !ctx) return;
+    
+    if (video) video.style.display = 'none';
+    canvas.style.display = 'block';
+    
     this.imageElement.onload = () => {
       canvas.width = 640;
       canvas.height = 360;
-      context.clearRect(0, 0, canvas.width, canvas.height);
-      context.drawImage(this.imageElement, 0, 0, canvas.width, canvas.height);
-  
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(this.imageElement, 0, 0, canvas.width, canvas.height);
+      
       if (this.isPlaying) {
         this.timer = setTimeout(() => this.nextAsset(), asset.duration * 1000);
       }
     };
-  
+    
     this.imageElement.src = asset.mediaUrl;
-  
-    this.imagePlayStartTime = Date.now();
-    this.imageElapsedBeforePause = 0;
+    this.startTime = Date.now();
+    this.pausedTime = 0;
   }
-
-  private loadVideo(asset: MediaAsset): void {
-    const video = this.videoPlayerRef?.nativeElement;
-    if (!video) return;
   
+  private loadVideo(asset: MediaAsset): void {
+    const video = this.getVideo();
+    const canvas = this.canvasRef?.nativeElement;
+    if (!video) return;
+    
+    if (canvas) canvas.style.display = 'none';
+    video.style.display = 'block';
+    
+    this.resetVideoEvents(video);
+    
     video.src = asset.mediaUrl;
     video.load();
-  
-    const trimStart = asset.trimStart || 0;
-    const trimEnd = asset.trimEnd || asset.originalDuration || asset.duration;
-  
+    
+    const trimStart = asset.trimStart ?? 0;
+    const trimEnd = asset.trimEnd ?? asset.originalDuration ?? asset.duration;
+    
+    let ended = false;
+    
     video.onloadedmetadata = () => {
+      if (!asset.duration) asset.duration = video.duration;
+      if (!asset.originalDuration) asset.originalDuration = video.duration;
+      
       video.currentTime = trimStart;
-      if (this.isPlaying) {
-        video.play().catch(err => console.error('Error playing video:', err));
-      }
+      if (this.isPlaying) video.play().catch(err => console.error('Error playing:', err));
     };
-  
+    
     video.ontimeupdate = () => {
-      if (video.currentTime >= trimEnd) {
-        video.ontimeupdate = null;
+      if (asset.trimEnd !== undefined && video.currentTime >= trimEnd && !ended) {
+        ended = true;
         video.pause();
         this.nextAsset();
       }
     };
+    
+    video.onended = () => {
+      if (!ended) {
+        ended = true;
+        this.nextAsset();
+      }
+    };
   }
-
+  
   private nextAsset(): void {
     this.currentAssetIndex = (this.currentAssetIndex + 1) % this.mediaAssets.length;
     this.loadAsset(this.currentAssetIndex);
   }
-
-  private getCurrentTimeInAsset(): number {
-    const asset = this.mediaAssets[this.currentAssetIndex];
+  
+  private getCurrentAsset(): MediaAsset {
+    return this.mediaAssets[this.currentAssetIndex];
+  }
+  
+  private getVideo(): HTMLVideoElement | null {
+    return this.videoPlayerRef?.nativeElement ?? null;
+  }
+  
+  private getCurrentTime(): number {
+    const asset = this.getCurrentAsset();
     if (!asset) return 0;
-
+    
     if (asset.type === 'video') {
-      const video = this.videoPlayerRef?.nativeElement;
+      const video = this.getVideo();
       const trimStart = asset.trimStart || 0;
       return video ? Math.max(0, video.currentTime - trimStart) : 0;
-    } else if (asset.type === 'image') {
+    } else {
       return this.isPlaying
-        ? Math.min((Date.now() - this.imagePlayStartTime) / 1000, asset.duration)
-        : Math.min(this.imageElapsedBeforePause, asset.duration);
+        ? Math.min((Date.now() - this.startTime) / 1000, asset.duration)
+        : Math.min(this.pausedTime, asset.duration);
     }
-
-    return 0;
   }
-
-  private updateTimeInfo(): void {
+  
+  private emitTimeUpdate(): void {
     if (!this.mediaAssets.length) return;
-
-    const asset = this.mediaAssets[this.currentAssetIndex];
-    const currentTime = this.getCurrentTimeInAsset();
+    
+    const asset = this.getCurrentAsset();
+    const currentTime = this.getCurrentTime();
     const progress = asset.duration > 0 ? (currentTime / asset.duration) * 100 : 0;
-
+    
     this.timeUpdate.emit({
       currentTime,
       assetDuration: asset.duration,
@@ -245,11 +246,17 @@ export class CanvasPlayerComponent implements OnChanges, OnInit, OnDestroy, Afte
       progress,
     });
   }
-
+  
   private clearTimer(): void {
     if (this.timer) {
       clearTimeout(this.timer);
       this.timer = null;
     }
+  }
+  
+  private resetVideoEvents(video: HTMLVideoElement): void {
+    video.onloadedmetadata = null;
+    video.ontimeupdate = null;
+    video.onended = null;
   }
 }
