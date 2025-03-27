@@ -1,0 +1,25 @@
+<div class="player-container">
+  <app-canvas-player 
+    [mediaAssets]="mediaAssets"
+    [currentAssetIndex]="currentAssetIndex"
+    (timeUpdate)="onTimeUpdate($event)">
+  </app-canvas-player>
+
+  <app-play-bar
+      [progress]="progress"
+      [isPlaybarDisabled]="isPlaybarDisabled"
+      [currentTime]="currentTime"
+      [assetDuration]="assetDuration"
+      [isPlaying]="isPlaying"
+      (play)="onPlay()"
+      (pause)="onPause()"
+      (seek)="onSeek($event)">
+    </app-play-bar>
+
+
+</div>
+<app-thumbnail-bar 
+    [mediaAssets]="mediaAssets"
+    [currentAssetIndex]="currentAssetIndex"
+    (assetSelected)="onAssetSelected($event)">
+</app-thumbnail-bar>

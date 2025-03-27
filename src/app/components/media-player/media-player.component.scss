@@ -1,0 +1,12 @@
+.player-container {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    max-width: 50rem;
+    margin: 0 auto;
+    background-color: #ffffff;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  }

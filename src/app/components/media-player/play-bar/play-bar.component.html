@@ -1,0 +1,26 @@
+<div class="play-bar" [ngClass]="{'disabled': isPlaybarDisabled}">
+    <div class="controls">
+      <button *ngIf="!isPlaying" (click)="onPlay()" class="play-button">
+        <span class="play-icon">▶</span>
+      </button>
+      <button *ngIf="isPlaying" (click)="onPause()" class="pause-button">
+        <span class="pause-icon">⏸</span>
+      </button>
+    </div>
+    
+    <div class="progress-container">
+      <input
+        type="range"
+        min="0"
+        max="100"
+        [value]="progress"
+        (input)="onSeek($event)"
+        class="progress-slider">
+        
+      <div class="time-display">
+        <span class="current-time">{{ formatTimeFunc(currentTime) }}</span>
+        <span class="duration-separator">/</span>
+        <span class="total-time">{{ formatTimeFunc(assetDuration) }}</span>
+      </div>
+    </div>
+  </div>

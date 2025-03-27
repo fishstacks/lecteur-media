@@ -1,0 +1,54 @@
+<div class="asset-info-card">
+
+    <div class="media-thumbnail">
+        <img *ngIf="asset.type === 'image'" [src]="asset.mediaUrl" alt="Image thumbnail">
+        <img *ngIf="asset.type === 'video' && videoThumbnailUrl" [src]="videoThumbnailUrl" alt="Video thumbnail">
+        <div *ngIf="asset.type === 'video' && !videoThumbnailUrl" class="missing-thumbnail">
+          Chargement...
+        </div>
+    </div>
+    <h3>{{ asset.name }}</h3>
+    <div class="media-asset">
+        <div class="media-info">
+            @if (asset.type === 'image'){
+            <p>Type de média: Image </p>}
+            @else{ <p>Type de média: Vidéo </p>}
+            <p>Durée: {{ asset.duration }}s</p>
+            <p>Points de lecture : {{ asset.startTime }} - {{ asset.endTime }}</p>
+        </div>
+        <div class="button-group">
+            <button (click)="onRemove()">Supprimer</button>
+            <button (click)="toggleEditDuration()">
+                {{ isEditing ? 'Annuler' : 'Modifier la durée' }}
+            </button>
+        </div>
+    </div>
+
+<div *ngIf="isEditing" class="edit-section">
+    <div *ngIf="asset.type === 'image'" class="edit-controls">
+    <div class="image-flex">
+        <label>Durée (secondes):
+            <input type="number" [(ngModel)]="newDuration" min="1" step="0.1" />
+        </label>
+        <div class="action-buttons">
+            <button class="action-button-image" (click)="saveDuration()">Enregistrer</button>
+        </div>
+    </div>
+    </div>
+
+    <div *ngIf="asset.type === 'video'" class="edit-controls">
+        <div class="slider-container">
+            <ngx-slider 
+                [(value)]="minValue" 
+                [(highValue)]="maxValue" 
+                [options]="options"
+                (userChangeEnd)="onTrimChange()">
+            </ngx-slider>
+        </div>
+        <div class="action-buttons">
+            <button class="action-button" (click)="resetTrim()">Réinitializer</button>
+            <button class="action-button" (click)="saveDuration()">Enregistrer</button>
+        </div>
+    </div>
+</div>
+</div>

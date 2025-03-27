@@ -1,0 +1,25 @@
+<div class="sidebar">
+    <div class="add-media-button">
+      <input 
+        type="file" 
+        #fileInput
+        (change)="onFileSelected($event)" 
+        accept="video/*,image/*"
+      />
+    </div>
+  
+    <div
+      cdkDropList
+      [cdkDropListData]="mediaAssets"
+      (cdkDropListDropped)="onDrop($event)"
+      class="media-list"
+    >
+      <div *ngFor="let asset of mediaAssets" cdkDrag class="media-item">
+        <app-asset-info
+          [asset]="asset"
+          (remove)="removeAsset($event)"
+          (editDuration)="updateAssetDuration($event)"
+        ></app-asset-info>
+      </div>
+    </div>
+  </div>

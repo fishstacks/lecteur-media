@@ -1,0 +1,23 @@
+<div class="thumbnail-bar">
+  <div 
+    *ngFor="let asset of mediaAssets; let i = index" 
+    class="thumbnail"
+    [ngClass]="{'active': isActive(i)}"
+    [style.width.%]="getThumbnailWidth(asset)"
+    (click)="onThumbnailClick(i)">
+    
+    <div class="thumbnail-container">
+      <img 
+        *ngIf="hasThumbnail(asset)" 
+        [src]="getThumbnailImage(asset)" 
+        [alt]="'Thumbnail ' + i" 
+        class="thumbnail-img">
+      
+      <div *ngIf="!hasThumbnail(asset)" class="thumbnail-placeholder">
+        <span *ngIf="asset.type === 'video' && videoThumbnails[asset.mediaUrl] === 'loading'">Loading...</span>
+        <span *ngIf="asset.type === 'video' && videoThumbnails[asset.mediaUrl] === 'error'">Error</span>
+      </div>
+    </div>
+    
+  </div>
+</div>

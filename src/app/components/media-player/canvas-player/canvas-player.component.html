@@ -1,0 +1,6 @@
+<div class="canvas-player-container">
+    <div *ngIf="mediaAssets[currentAssetIndex]">
+    <canvas #canvas [style.display]="mediaAssets[currentAssetIndex].type === 'image' ? 'block' : 'none'"></canvas>
+    <video #videoPlayer [style.display]="mediaAssets[currentAssetIndex].type === 'video' ? 'block' : 'none'"></video>
+    </div>
+  </div>

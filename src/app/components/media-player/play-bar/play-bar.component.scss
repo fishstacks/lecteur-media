@@ -1,0 +1,110 @@
+.play-bar {
+    display: flex;
+    align-items: center;
+    padding: 10px 16px;
+    background-color: #ffffff;
+    border-top: 1px solid #ddd;
+    box-shadow: 0 -2px 4px rgba(0, 0, 0, 0.05);
+  }
+  
+  .controls {
+    margin-right: 16px;
+  }
+  
+  button {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: none;
+    background-color: #007bff;
+    color: white;
+    font-size: 14px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.2s;
+  }
+  
+  button:hover {
+    background-color: #0056b3;
+  }
+  
+  .play-icon {
+    margin-left: 2px;
+  }
+  
+  .progress-container {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .progress-slider {
+    width: 100%;
+    -webkit-appearance: none;
+    height: 6px;
+    background: #ddd;
+    border-radius: 4px;
+    outline: none;
+    cursor: pointer;
+    margin-bottom: 8px;
+  }
+  
+  .progress-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 14px;
+    height: 14px;
+    background: #007bff;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: transform 0.2s;
+  }
+  
+  .progress-slider::-webkit-slider-thumb:hover {
+    transform: scale(1.2);
+  }
+  
+  .progress-slider::-moz-range-thumb {
+    width: 14px;
+    height: 14px;
+    background: #007bff;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: transform 0.2s;
+  }
+  
+  .progress-slider::-moz-range-thumb:hover {
+    transform: scale(1.2);
+  }
+  
+  .time-display {
+    display: flex;
+    font-size: 12px;
+    color: #666;
+  }
+  
+  .current-time {
+    min-width: 40px;
+  }
+  
+  .duration-separator {
+    margin: 0 4px;
+  }
+  
+  .total-time {
+    min-width: 40px;
+  }
+
+  .play-bar.disabled {
+    opacity: 0.5;
+    pointer-events: none;
+  }
+  
+  .play-bar.disabled .play-button,
+  .play-bar.disabled .pause-button,
+  .play-bar.disabled .progress-slider {
+    pointer-events: none;
+    cursor: not-allowed;
+  }
+  
